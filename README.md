@@ -18,6 +18,13 @@
 - 💾 **Persistent state** — On/off preference survives page reloads (via `GM_setValue`/`GM_getValue`).
 - 🛡️ **Safe** — Skips `<script>`, `<style>`, `<input>`, `<textarea>`, and `contenteditable` areas. Named colors use negative lookbehind to avoid false matches in CSS class names (`text-red-500`, `--red`, `non-red`).
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="screenshots/HKb4HUUaMAAx9vd.jpg" alt="Color swatches in action — hex, rgb, hsl colors with preview badges" width="48%" />
+  <img src="screenshots/HKb5NTTa8AA1RCH.jpg" alt="Color swatches with hover tooltip showing parsed RGBA values" width="48%" />
+</p>
+
 ## 🎯 Supported Color Formats
 
 | Format | Examples |

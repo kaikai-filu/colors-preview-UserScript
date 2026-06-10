@@ -18,6 +18,13 @@
 - 💾 **状态持久化** — 开关偏好跨页面刷新保持（通过 `GM_setValue`/`GM_getValue`）
 - 🛡️ **精确匹配 & 安全** — 自动跳过 `<script>`、`<style>`、`<input>`、`<textarea>` 和 `contenteditable` 区域。命名颜色使用反向 Lookbehind `(?<![\w-])` 避免在 CSS 类名中误匹配（如 `text-red-500`、`--red`、`non-red`）
 
+## 📸 截图
+
+<p align="center">
+  <img src="screenshots/HKb4HUUaMAAx9vd.jpg" alt="颜色预览色块效果 — hex、rgb、hsl 等颜色代码旁显示预览色块" width="48%" />
+  <img src="screenshots/HKb5NTTa8AA1RCH.jpg" alt="悬停色块时显示解析后的 RGBA 数值" width="48%" />
+</p>
+
 ## 🎯 支持的颜色格式
 
 | 格式 | 示例 |
