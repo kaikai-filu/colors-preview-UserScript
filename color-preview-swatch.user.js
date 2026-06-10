@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Color Preview Swatch
 // @namespace    https://github.com/nicepkg/color-preview-swatch
-// @version      1.1.0
+// @version      1.2.0
 // @description  Auto-detect color codes (Hex / RGB / RGBA / HSL / HSLA / Named) in any webpage and display clickable color preview swatches. Toggle with Alt+C or Ctrl+Shift+C. Persistent on/off state via Tampermonkey menu.
 // @author       Claude
 // @match        *://*/*
@@ -131,10 +131,17 @@
         'yellowgreen': '#9acd32',
     };
 
-    // Build the named-color regex once (longest names first to avoid partial matches)
+    // Build the named-color regex once (longest names first so "darkred" is
+    // tested before "red", preventing partial matches within compound names).
+    //
+    // Negative lookbehind (?<![\w-]) ensures the color name is NOT preceded by
+    // a word character or hyphen — this excludes CSS-class-like tokens:
+    //   ✓ matches  " red ", "darkred", "color:red;"
+    //   ✗ skipped  "text-red-500", "--red", "non-red", "reddish"
+    // Trailing \b prevents matching inside longer words (e.g. "reddish").
     const NAMED_COLOR_NAMES = Object.keys(NAMED_COLORS).sort((a, b) => b.length - a.length);
     const NAMED_COLOR_RE = new RegExp(
-        '\\b(' + NAMED_COLOR_NAMES.join('|') + ')\\b',
+        '(?<![\\w-])(' + NAMED_COLOR_NAMES.join('|') + ')\\b',
         'gi'
     );
 
