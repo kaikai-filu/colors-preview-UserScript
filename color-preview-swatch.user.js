@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name         Color Preview Swatch
 // @namespace    https://github.com/nicepkg/color-preview-swatch
-// @version      1.0.0
-// @description  Auto-detect color codes (Hex / RGB / RGBA / HSL / HSLA / Named) in any webpage and display clickable color preview swatches. Toggle with Alt+C.
+// @version      1.1.0
+// @description  Auto-detect color codes (Hex / RGB / RGBA / HSL / HSLA / Named) in any webpage and display clickable color preview swatches. Toggle with Alt+C or Ctrl+Shift+C. Persistent on/off state via Tampermonkey menu.
 // @author       Claude
 // @match        *://*/*
 // @run-at       document-end
-// @grant        none
+// @grant        GM_getValue
+// @grant        GM_setValue
+// @grant        GM_registerMenuCommand
+// @grant        GM_unregisterMenuCommand
 // @license      MIT
 // @homepageURL  https://github.com/nicepkg/color-preview-swatch
 // @supportURL   https://github.com/nicepkg/color-preview-swatch/issues
@@ -24,9 +27,10 @@
 //   • Click a swatch to copy the original color string to clipboard.
 //   • Uses MutationObserver + debounce for SPA / dynamic content.
 //   • Works inside <pre>, <code>, and syntax-highlighted blocks.
-//   • Alt+C toggles all swatches on/off globally.
+//   • Alt+C / Ctrl+Shift+C toggles all swatches on/off globally.
+//   • Persistent on/off state — survives page reloads (GM_getValue/setValue).
+//   • Tampermonkey menu command with live status text.
 //   • Skips <script>, <style>, <input>, <textarea>, contenteditable areas.
-//   • @grant none — no elevated permissions needed.
 // =============================================================================
 
 (function () {
@@ -42,8 +46,31 @@
         DARK_BORDER: '#333333',   // border used on light-color swatches
         LIGHT_BORDER: '#cccccc',  // border used on dark-color swatches
         DEBOUNCE_MS: 250,         // ms – debounce window for MutationObserver
-        TOGGLE_KEY: 'c',          // key (combined with Alt) to toggle on/off
+        TOGGLE_KEY: 'c',          // key for Alt+Key and Ctrl+Shift+Key shortcuts
+        STORAGE_KEY: 'cs_enabled',// GM_setValue / GM_getValue key
     };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // 1b. Tampermonkey Menu Command (dynamic label reflecting current state)
+    // ─────────────────────────────────────────────────────────────────────────
+    let menuCommandId = null;
+
+    /** Re-register the menu command so its label always shows current state. */
+    function refreshMenuLabel() {
+        try {
+            if (typeof GM_unregisterMenuCommand !== 'undefined' && menuCommandId !== null) {
+                GM_unregisterMenuCommand(menuCommandId);
+            }
+        } catch (_) { /* ignore */ }
+        try {
+            if (typeof GM_registerMenuCommand !== 'undefined') {
+                const label = enabled
+                    ? '颜色预览：已开启 ✓'
+                    : '颜色预览：已关闭';
+                menuCommandId = GM_registerMenuCommand(label, toggle);
+            }
+        } catch (_) { /* ignore — script manager may not support menu commands */ }
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // 2. Named CSS Colors  (148 standard names → hex)
@@ -333,9 +360,14 @@
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 6. State
+    // 6. State  (persisted across page loads via GM_getValue)
     // ─────────────────────────────────────────────────────────────────────────
-    let enabled = true;
+    let enabled;
+    {
+        let saved = true; // default
+        try { saved = GM_getValue(CONFIG.STORAGE_KEY, true); } catch (_) { /* ok */ }
+        enabled = saved !== false;
+    }
     const processedNodes = new WeakSet(); // text nodes already scanned
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -629,11 +661,15 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // 11. Toggle  (Alt+C)
+    // 11. Toggle  (Alt+C / Ctrl+Shift+C / Menu command)
     // ─────────────────────────────────────────────────────────────────────────
 
     function toggle() {
         enabled = !enabled;
+
+        // Persist across page reloads
+        try { GM_setValue(CONFIG.STORAGE_KEY, enabled); } catch (_) { /* ok */ }
+
         if (enabled) {
             document.documentElement.classList.remove('cs-swatch-disabled');
             // Re-scan — new content may have appeared while disabled
@@ -641,12 +677,19 @@
         } else {
             document.documentElement.classList.add('cs-swatch-disabled');
         }
+
+        // Update the Tampermonkey menu label
+        refreshMenuLabel();
     }
 
     function setupKeyboardShortcut() {
         document.addEventListener('keydown', function (e) {
-            // Alt+C  (case-insensitive)
-            if (e.altKey && e.key.toLowerCase() === CONFIG.TOGGLE_KEY) {
+            // Alt+C  or  Ctrl+Shift+C  (case-insensitive)
+            const isToggleKey = e.key.toLowerCase() === CONFIG.TOGGLE_KEY;
+            const isAltC = e.altKey && !e.ctrlKey && !e.metaKey && isToggleKey;
+            const isCtrlShiftC = e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && isToggleKey;
+
+            if (isAltC || isCtrlShiftC) {
                 // Don't trigger when user is typing inside an input / textarea / contenteditable
                 const active = document.activeElement;
                 if (active) {
@@ -657,6 +700,7 @@
                     }
                 }
                 e.preventDefault();
+                e.stopPropagation();
                 toggle();
             }
         });
@@ -669,6 +713,15 @@
     function init() {
         injectGlobalStyles();
         setupKeyboardShortcut();
+
+        // Apply persisted on/off state to the DOM
+        if (!enabled) {
+            document.documentElement.classList.add('cs-swatch-disabled');
+        }
+
+        // Register Tampermonkey menu command with initial label
+        refreshMenuLabel();
+
         startObserver();
 
         // Initial scan — wait for the body to be ready

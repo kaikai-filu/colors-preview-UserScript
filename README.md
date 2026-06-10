@@ -1,0 +1,69 @@
+# Color Preview Swatch 🎨
+
+> A Tampermonkey / Violentmonkey userscript that automatically detects color codes in any webpage and displays clickable color preview swatches.
+
+[中文文档](README_zh.md)
+
+## ✨ Features
+
+- 🔍 **Comprehensive color detection** — Hex (`#RGB`, `#RRGGBB`, `#RGBA`, `#RRGGBBAA`), `rgb()`/`rgba()`, `hsl()`/`hsla()`, and **148 named CSS colors**
+- 🟦 **Inline color swatches** — 14×14 px rounded squares inserted right next to each detected color
+- 🌓 **Dark-mode friendly** — Swatch border automatically adapts (dark border on light colors, light border on dark colors)
+- 🏁 **Alpha transparency** — Semi-transparent colors show a checkerboard pattern underneath
+- 📋 **Click to copy** — Click any swatch to copy the original color string to clipboard (with green flash feedback)
+- ⚡ **SPA-ready** — `MutationObserver` + debounce handles dynamically loaded content (React, Vue, comments, live code)
+- 📝 **Code-block friendly** — Works inside `<pre>`, `<code>`, and syntax-highlighted regions
+- 🎛️ **Global toggle** — `Alt+C` or `Ctrl+Shift+C` to switch on/off; Tampermonkey menu command with live status text
+- 💾 **Persistent state** — On/off preference survives page reloads (via `GM_setValue`/`GM_getValue`)
+- 🛡️ **Safe** — Skips `<script>`, `<style>`, `<input>`, `<textarea>`, and `contenteditable` areas
+
+## 🎯 Supported Color Formats
+
+| Format | Examples |
+|--------|----------|
+| Hex short | `#fff`, `#f0f8` |
+| Hex long | `#ff0000`, `#ff000080` |
+| RGB (comma) | `rgb(255, 99, 71)` |
+| RGBA (comma) | `rgba(255, 99, 71, 0.8)` |
+| RGB (space) | `rgb(255 0 0)`, `rgb(255 0 0 / 0.5)` |
+| HSL (comma) | `hsl(200, 80%, 60%)` |
+| HSLA (comma) | `hsla(200, 80%, 60%, 0.7)` |
+| HSL (space) | `hsl(200 80% 60%)`, `hsl(200 80% 60% / 0.7)` |
+| Named colors | `red`, `blue`, `rebeccapurple`, `transparent` ... (148 total) |
+
+## 📦 Installation
+
+1. Install **[Tampermonkey](https://www.tampermonkey.net/)** or **[Violentmonkey](https://violentmonkey.github.io/)** for your browser.
+2. Open [`color-preview-swatch.user.js`](color-preview-swatch.user.js) and click the **Raw** button, or drag it into your script manager.
+3. The script manager will prompt you to install — confirm, and you're done!
+
+## ⌨️ Usage
+
+| Action | Shortcut / Method |
+|--------|-------------------|
+| **Toggle on/off** | `Alt + C` or `Ctrl + Shift + C` |
+| **Toggle via menu** | Click the Tampermonkey toolbar icon → "颜色预览：已开启 ✓" / "颜色预览：已关闭" |
+| **Copy a color** | Click the swatch next to any detected color |
+
+> **Note:** The keyboard shortcut is automatically disabled when you're typing inside an input field, textarea, or contenteditable region.
+
+## 🔧 Compatibility
+
+| Script Manager | Supported |
+|----------------|-----------|
+| Tampermonkey | ✅ Full support (menu commands, persistent state) |
+| Violentmonkey | ✅ Full support |
+| Greasemonkey 4+ | ⚠️ Works, but menu command may not display |
+
+## 📁 File Structure
+
+```
+colors-preview/
+├── color-preview-swatch.user.js   # The userscript
+├── README.md                      # English documentation
+└── README_zh.md                   # Chinese documentation
+```
+
+## 📄 License
+
+MIT License
