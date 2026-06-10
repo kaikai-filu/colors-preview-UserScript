@@ -1,9 +1,13 @@
 // ==UserScript==
 // @name         Color Preview Swatch
+// @name:zh-CN   颜色预览色块
 // @namespace    https://github.com/kaikai-filu/colors-preview-UserScript
-// @version      1.2.0
+// @version      1.3.0
 // @description  Auto-detect color codes (Hex / RGB / RGBA / HSL / HSLA / Named) in any webpage and display clickable color preview swatches. Toggle with Alt+C or Ctrl+Shift+C. Persistent on/off state via Tampermonkey menu.
+// @description:zh-CN  自动检测网页中的颜色代码（Hex / RGB / RGBA / HSL / HSLA / 命名颜色），并在旁边显示可点击的颜色预览色块。支持 Alt+C / Ctrl+Shift+C 切换开关，状态持久化保存。
 // @author       kaikai-filu
+// @copyright    2025 kaikai-filu
+// @icon         https://raw.githubusercontent.com/kaikai-filu/colors-preview-UserScript/main/icon.svg
 // @match        *://*/*
 // @run-at       document-end
 // @grant        GM_getValue
@@ -13,6 +17,8 @@
 // @license      MIT
 // @homepageURL  https://github.com/kaikai-filu/colors-preview-UserScript
 // @supportURL   https://github.com/kaikai-filu/colors-preview-UserScript/issues
+// @downloadURL  https://raw.githubusercontent.com/kaikai-filu/colors-preview-UserScript/main/color-preview-swatch.user.js
+// @updateURL    https://raw.githubusercontent.com/kaikai-filu/colors-preview-UserScript/main/color-preview-swatch.user.js
 // ==/UserScript==
 
 // =============================================================================

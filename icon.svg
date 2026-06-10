@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- rounded background -->
+  <rect width="64" height="64" rx="12" fill="#1e1e2e"/>
+  <!-- three color swatches -->
+  <rect x="6" y="15" width="24" height="14" rx="3" fill="#FF3B30"/>
+  <rect x="33" y="15" width="24" height="14" rx="3" fill="#FFCC00"/>
+  <rect x="6" y="34" width="24" height="14" rx="3" fill="#34C759"/>
+  <rect x="33" y="34" width="24" height="14" rx="3" fill="#007AFF"/>
+  <!-- copy cursor -->
+  <path d="M44 53h8v-16l-5-5h-3v21z" fill="#fff" opacity="0.9"/>
+  <rect x="42" y="51" width="12" height="2" rx="1" fill="#1e1e2e" opacity="0.3"/>
+</svg>
