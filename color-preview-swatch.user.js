@@ -214,66 +214,25 @@
     // 4. Color Utility Functions
     // ─────────────────────────────────────────────────────────────────────────
 
-    /** Parse a hex string (e.g. "#ff0044" or "#f04") into {r,g,b,a} */
-    function hexToRgb(hex) {
-        let r, g, b, a = 1;
-        const h = hex.slice(1); // drop '#'
-        if (h.length === 3 || h.length === 4) {
-            // #RGB / #RGBA
-            r = parseInt(h[0] + h[0], 16);
-            g = parseInt(h[1] + h[1], 16);
-            b = parseInt(h[2] + h[2], 16);
-            if (h.length === 4) a = parseInt(h[3] + h[3], 16) / 255;
-        } else {
-            // #RRGGBB / #RRGGBBAA
-            r = parseInt(h.slice(0, 2), 16);
-            g = parseInt(h.slice(2, 4), 16);
-            b = parseInt(h.slice(4, 6), 16);
-            if (h.length === 8) a = parseInt(h.slice(6, 8), 16) / 255;
-        }
-        return { r, g, b, a: Math.round(a * 1000) / 1000 };
-    }
+    /**
+     * Reusable 1×1 canvas for parsing ANY valid CSS color string into actual
+     * RGBA pixel values.  The browserʼs own CSS parser handles every format
+     * (hex, rgb, rgba, hsl, hsla, named colors, modern space syntax, …)
+     * uniformly — no manual conversion needed.
+     */
+    const _colorCtx = (() => {
+        const c = document.createElement('canvas');
+        c.width = 1;
+        c.height = 1;
+        return c.getContext('2d', { willReadFrequently: true });
+    })();
 
-    /** Parse alpha from a CSS alpha string (number or percentage) */
-    function parseAlpha(raw) {
-        if (raw === undefined) return 1;
-        if (raw.endsWith('%')) return Math.min(1, Math.max(0, parseFloat(raw) / 100));
-        return Math.min(1, Math.max(0, parseFloat(raw)));
-    }
-
-    /** Convert HSL to RGB.  h: 0-360, s: 0-100, l: 0-100 */
-    function hslToRgb(h, s, l) {
-        s /= 100;
-        l /= 100;
-        if (s === 0) {
-            const v = Math.round(l * 255);
-            return { r: v, g: v, b: v };
-        }
-        const c = (1 - Math.abs(2 * l - 1)) * s;
-        const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-        const m = l - c / 2;
-        let r, g, b;
-        if (h < 60)      { r = c; g = x; b = 0; }
-        else if (h < 120) { r = x; g = c; b = 0; }
-        else if (h < 180) { r = 0; g = c; b = x; }
-        else if (h < 240) { r = 0; g = x; b = c; }
-        else if (h < 300) { r = x; g = 0; b = c; }
-        else              { r = c; g = 0; b = x; }
-        return {
-            r: Math.round((r + m) * 255),
-            g: Math.round((g + m) * 255),
-            b: Math.round((b + m) * 255),
-        };
-    }
-
-    /** Convert an HSL hue angle + optional unit to degrees */
-    function hueToDegrees(value, unit) {
-        const v = parseFloat(value);
-        if (!unit || unit.toLowerCase() === 'deg') return v % 360;
-        if (unit.toLowerCase() === 'rad') return (v * 180 / Math.PI) % 360;
-        if (unit.toLowerCase() === 'grad') return (v * 0.9) % 360;
-        if (unit.toLowerCase() === 'turn') return (v * 360) % 360;
-        return v % 360;
+    /** Parse a CSS color string → { r, g, b, a }.  a is 0…1. */
+    function getPixelRGBA(colorStr) {
+        _colorCtx.fillStyle = colorStr;
+        _colorCtx.fillRect(0, 0, 1, 1);
+        const d = _colorCtx.getImageData(0, 0, 1, 1).data;
+        return { r: d[0], g: d[1], b: d[2], a: d[3] / 255 };
     }
 
     /**
@@ -288,12 +247,6 @@
         return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
     }
 
-    /** Build a CSS color string for the swatch background. */
-    function toCssColor(r, g, b, a) {
-        if (a < 1) return `rgba(${r},${g},${b},${a})`;
-        return `rgb(${r},${g},${b})`;
-    }
-
     // ─────────────────────────────────────────────────────────────────────────
     // 5. Color Pattern Definitions
     //    Each entry: { pattern: RegExp, handler: (match) => {r,g,b,a} | null }
@@ -302,59 +255,35 @@
         // --- Hex: #RGB, #RRGGBB, #RGBA, #RRGGBBAA ---
         {
             pattern: /#([0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-fA-F])/g,
-            handler: (m) => hexToRgb(m[0]),
+            handler: (m) => m[0],  // return the matched hex string as-is
         },
-        // --- RGB / RGBA — legacy comma syntax ---
+        // --- RGB / RGBA — legacy comma syntax: rgb(97,95,255), rgba(97,95,255,0.8) ---
         {
             pattern: /rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*(?:,\s*([\d.]+%?)\s*)?\)/gi,
-            handler: (m) => ({
-                r: Math.min(255, Math.max(0, parseInt(m[1], 10))),
-                g: Math.min(255, Math.max(0, parseInt(m[2], 10))),
-                b: Math.min(255, Math.max(0, parseInt(m[3], 10))),
-                a: parseAlpha(m[4]),
-            }),
+            handler: (m) => m[0],
         },
-        // --- RGB / RGBA — modern space syntax (e.g. rgb(255 0 0 / 0.5)) ---
+        // --- RGB / RGBA — modern space syntax: rgb(97 95 255), rgba(97 95 255 / 0.8) ---
         {
             pattern: /rgba?\(\s*(\d{1,3})\s+(\d{1,3})\s+(\d{1,3})\s*(?:\/\s*([\d.]+%?)\s*)?\)/gi,
-            handler: (m) => ({
-                r: Math.min(255, Math.max(0, parseInt(m[1], 10))),
-                g: Math.min(255, Math.max(0, parseInt(m[2], 10))),
-                b: Math.min(255, Math.max(0, parseInt(m[3], 10))),
-                a: parseAlpha(m[4]),
-            }),
+            handler: (m) => m[0],
         },
         // --- HSL / HSLA — legacy comma syntax ---
         {
             pattern: /hsla?\(\s*([\d.]+)\s*(deg|rad|grad|turn)?\s*,\s*(\d{1,3})%?\s*,\s*(\d{1,3})%?\s*(?:,\s*([\d.]+%?)\s*)?\)/gi,
-            handler: (m) => {
-                const h = hueToDegrees(m[1], m[2]);
-                const s = Math.min(100, Math.max(0, parseInt(m[3], 10)));
-                const l = Math.min(100, Math.max(0, parseInt(m[4], 10)));
-                const rgb = hslToRgb(h, s, l);
-                return { ...rgb, a: parseAlpha(m[5]) };
-            },
+            handler: (m) => m[0],
         },
-        // --- HSL / HSLA — modern space syntax (e.g. hsl(200 80% 60% / 0.7)) ---
+        // --- HSL / HSLA — modern space syntax: hsl(200 80% 60% / 0.7) ---
         {
             pattern: /hsla?\(\s*([\d.]+)(deg|rad|grad|turn)?\s+(\d{1,3})%?\s+(\d{1,3})%?\s*(?:\/\s*([\d.]+%?)\s*)?\)/gi,
-            handler: (m) => {
-                const h = hueToDegrees(m[1], m[2]);
-                const s = Math.min(100, Math.max(0, parseInt(m[3], 10)));
-                const l = Math.min(100, Math.max(0, parseInt(m[4], 10)));
-                const rgb = hslToRgb(h, s, l);
-                return { ...rgb, a: parseAlpha(m[5]) };
-            },
+            handler: (m) => m[0],
         },
-        // --- Named CSS colors ---
+        // --- Named CSS colors (148 standard names) ---
         {
             pattern: NAMED_COLOR_RE,
             handler: (m) => {
+                // Only accept names that are in our map
                 const name = m[1].toLowerCase();
-                const hex = NAMED_COLORS[name];
-                if (!hex) return null;
-                if (name === 'transparent') return { r: 0, g: 0, b: 0, a: 0 };
-                return hexToRgb(hex);
+                return NAMED_COLORS.hasOwnProperty(name) ? name : null;
             },
         },
     ];
@@ -379,30 +308,40 @@
      * Returns a DocumentFragment containing a <span.cs-color-wrap> which holds
      * the original text node + the swatch <span>.
      */
-    function createSwatchWrapper(originalText, color) {
+    function createSwatchWrapper(originalText) {
         const wrap = document.createElement('span');
         wrap.className = 'cs-color-wrap';
 
-        // Original text
+        // Original text preserved verbatim
         wrap.appendChild(document.createTextNode(originalText));
 
         // Swatch
         const swatch = document.createElement('span');
         swatch.className = 'cs-color-swatch';
-        swatch.title = originalText + ' — Click to copy';
-        swatch.setAttribute('data-cs-color', originalText);
 
-        // Background
-        swatch.style.backgroundColor = toCssColor(color.r, color.g, color.b, color.a);
+        // ── Background: use the original color string directly ──
+        // The browser’s CSS parser natively handles hex / rgb() / rgba() /
+        // hsl() / hsla() / named colors / modern space-syntax — no conversion
+        // needed.  Alpha transparency renders naturally.
+        swatch.style.backgroundColor = originalText;
+
+        // ── Parse the actual rendered pixel for border & tooltip ──
+        const px = getPixelRGBA(originalText);
 
         // Alpha checkerboard
-        if (color.a < 1) {
+        if (px.a < 1) {
             swatch.classList.add('cs-has-alpha');
         }
 
-        // Adaptive border
-        const lum = luminance(color.r, color.g, color.b);
+        // Adaptive border based on luminance
+        const lum = luminance(px.r, px.g, px.b);
         swatch.style.borderColor = lum > 0.45 ? CONFIG.DARK_BORDER : CONFIG.LIGHT_BORDER;
+
+        // ── Tooltip: show original + parsed RGBA ──
+        swatch.title = originalText
+            + '\n→ rgba(' + px.r + ', ' + px.g + ', ' + px.b + ', ' + px.a.toFixed(2) + ')'
+            + '\nClick to copy';
+        swatch.setAttribute('data-cs-color', originalText);
 
         // Click → copy
         swatch.addEventListener('click', function (e) {
@@ -482,8 +421,9 @@
 
     /**
      * Find all color matches in a string.
-     * Returns an array of { index, length, text, color:{r,g,b,a} },
+     * Returns an array of { index, length, text },
      * sorted by position, with overlaps removed (first match wins).
+     * `text` is the original CSS color string (e.g. "#ff0000", "rgb(97,95,255)").
      */
     function findAllMatches(text) {
         const raw = [];
@@ -492,13 +432,12 @@
             pattern.lastIndex = 0;
             let m;
             while ((m = pattern.exec(text)) !== null) {
-                const color = handler(m);
-                if (!color) continue;
+                const colorStr = handler(m);
+                if (!colorStr) continue;  // handler returns null for invalid matches
                 raw.push({
                     index: m.index,
                     length: m[0].length,
-                    text: m[0],
-                    color,
+                    text: colorStr,  // the validated CSS color string
                 });
             }
         }
@@ -556,8 +495,9 @@
                 processedNodes.add(tn);
                 fragments.push(tn);
             }
-            // Swatch wrapper for the matched color
-            fragments.push(createSwatchWrapper(m.text, m.color));
+            // Swatch wrapper — uses the original color string directly;
+            // the canvas pixel reader handles border/tooltip internally.
+            fragments.push(createSwatchWrapper(m.text));
             cursor = m.index + m.length;
         }
         // Remaining text after last match
