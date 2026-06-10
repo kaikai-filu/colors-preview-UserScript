@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Color Preview Swatch
-// @namespace    https://github.com/nicepkg/color-preview-swatch
+// @namespace    https://github.com/kaikai-filu/colors-preview-UserScript
 // @version      1.2.0
 // @description  Auto-detect color codes (Hex / RGB / RGBA / HSL / HSLA / Named) in any webpage and display clickable color preview swatches. Toggle with Alt+C or Ctrl+Shift+C. Persistent on/off state via Tampermonkey menu.
-// @author       Claude
+// @author       kaikai-filu
 // @match        *://*/*
 // @run-at       document-end
 // @grant        GM_getValue
@@ -11,8 +11,8 @@
 // @grant        GM_registerMenuCommand
 // @grant        GM_unregisterMenuCommand
 // @license      MIT
-// @homepageURL  https://github.com/nicepkg/color-preview-swatch
-// @supportURL   https://github.com/nicepkg/color-preview-swatch/issues
+// @homepageURL  https://github.com/kaikai-filu/colors-preview-UserScript
+// @supportURL   https://github.com/kaikai-filu/colors-preview-UserScript/issues
 // ==/UserScript==
 
 // =============================================================================
