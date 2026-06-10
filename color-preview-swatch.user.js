@@ -209,7 +209,6 @@
             }
 
             /* ---- Toggle: hide swatches when disabled ---- */
-            html.cs-swatch-disabled .cs-color-wrap,
             html.cs-swatch-disabled .cs-color-swatch {
                 display: none !important;
             }
